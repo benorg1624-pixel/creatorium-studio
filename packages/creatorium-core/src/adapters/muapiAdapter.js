@@ -27,9 +27,10 @@ export function toMuapiParams(compiled, route) {
   return params;
 }
 
-export async function executeMuapi({ apiKey, compiled, route, studio }) {
+export async function executeMuapi({ apiKey, compiled, route, studio, onRequestId }) {
   if (!studio) throw new Error('executeMuapi requires the Studio MuAPI module');
   const params = toMuapiParams(compiled, route);
+  if (onRequestId) params.onRequestId = onRequestId;
 
   switch (route.task) {
     case 't2i': return studio.generateImage(apiKey, params);
