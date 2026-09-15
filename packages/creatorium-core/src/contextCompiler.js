@@ -4,25 +4,46 @@ function compact(parts) {
   return parts.filter(Boolean).join('\n\n');
 }
 
+function normalizeWorldLocks(locks = {}) {
+  if ('hard' in locks || 'soft' in locks) {
+    return { hard: locks.hard || {}, soft: locks.soft || {} };
+  }
+  // Legacy flat world locks remain supported as soft locks.
+  return { hard: {}, soft: locks };
+}
+
+function renderLocks(title, locks) {
+  const text = Object.entries(locks)
+    .map(([key, value]) => `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`)
+    .join('\n');
+  return text ? `${title}:\n${text}` : '';
+}
+
 export function compileContext({ project, world, shot }) {
   if (!project || !world || !shot) {
     throw new Error('compileContext requires project, world and shot');
   }
+  if (!shot.promptSpec) {
+    throw new Error('compileContext requires shot.promptSpec');
+  }
 
   const spec = shot.promptSpec;
-  const locks = {
-    ...(world.locks || {}),
-    ...(spec.continuity || {}),
-  };
+  const { hard, soft } = normalizeWorldLocks(world.locks);
+  const shotContinuity = spec.continuity || {};
 
-  const lockText = Object.entries(locks)
-    .map(([key, value]) => `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`)
-    .join('\n');
+  for (const key of Object.keys(shotContinuity)) {
+    if (Object.prototype.hasOwnProperty.call(hard, key)) {
+      throw new Error(`Shot continuity cannot override hard world lock: ${key}`);
+    }
+  }
+
+  const mergedSoft = { ...soft, ...shotContinuity };
 
   const prompt = compact([
     `PROJECT: ${project.name}`,
     `WORLD: ${world.name}`,
-    lockText && `CONTINUITY LOCKS:\n${lockText}`,
+    renderLocks('HARD CONTINUITY LOCKS', hard),
+    renderLocks('SOFT CONTINUITY LOCKS', mergedSoft),
     `SCENE: ${spec.scene}`,
     spec.subject && `SUBJECT: ${spec.subject}`,
     spec.action && `ACTION: ${spec.action}`,
@@ -38,6 +59,7 @@ export function compileContext({ project, world, shot }) {
     prompt,
     references: [...(world.references || []), ...(shot.references || [])],
     output: spec.output,
+    locks: { hard, soft: mergedSoft },
     metadata: {
       projectId: project.id,
       worldId: world.id,
