@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { CreatoriumGenerate } from '../../packages/creatorium-core/src/CreatoriumGenerate.js';
 
-export default function Workspace({ project, world, shot, models, onGenerate, result, error, generating }) {
+export default function Workspace({ project, world, shot, models, onGenerate, result, error, generating, debug }) {
   const [activeView, setActiveView] = useState('shot');
   const [draftShot, setDraftShot] = useState(shot);
   const hardLocks = useMemo(() => Object.entries(world.locks?.hard || {}), [world]);
@@ -30,6 +30,7 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
         <button className={activeView === 'world' ? 'active' : ''} onClick={() => setActiveView('world')}>World · {world.name}</button>
         <button className={activeView === 'shot' ? 'active' : ''} onClick={() => setActiveView('shot')}>Shot {draftShot.id} · {draftShot.title}</button>
         <button className={activeView === 'assets' ? 'active' : ''} onClick={() => setActiveView('assets')}>Assets{generating ? ' · Generating…' : result ? ' · 1' : ''}</button>
+        <button className={activeView === 'debug' ? 'active' : ''} onClick={() => setActiveView('debug')}>Generation Debug</button>
       </nav>
     </aside>
 
@@ -72,6 +73,20 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
           <div><strong>{draftShot.title}</strong><p>{result.creatorium?.model}</p><p>{result.creatorium?.task} · {result.creatorium?.engine}</p><small>{result.creatorium?.createdAt}</small></div>
         </div> : !generating && !result && <p>No generated asset yet.</p>}
         {result && !result.url && <pre>{JSON.stringify(result, null, 2)}</pre>}
+      </article>}
+
+      {activeView === 'debug' && <article className="creatorium-inspector creatorium-debug">
+        <p className="creatorium-kicker">GENERATION DEBUG / SAFE VIEW</p><h1>MuAPI request trace</h1>
+        <p className="creatorium-muted">API keys are never displayed here.</p>
+        {!debug ? <p>No generation trace captured yet.</p> : <>
+          <h2>Status</h2><pre>{debug.status}</pre>
+          <h2>Route</h2><pre>{JSON.stringify({ engine: debug.engine, task: debug.task, model: debug.model }, null, 2)}</pre>
+          <h2>Request ID</h2><pre>{debug.requestId || 'Not captured'}</pre>
+          <h2>Exact prompt sent</h2><pre>{debug.prompt}</pre>
+          <h2>Payload before MuAPI client</h2><pre>{JSON.stringify(debug.payload, null, 2)}</pre>
+          <h2>Result URL</h2><pre>{debug.resultUrl || 'Not completed'}</pre>
+          {debug.error && <><h2>Error</h2><pre>{debug.error}</pre></>}
+        </>}
       </article>}
     </section>
   </div>;
