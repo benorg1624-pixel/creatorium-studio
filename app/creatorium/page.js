@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CreatoriumGenerate } from '../../packages/creatorium-core/src/CreatoriumGenerate.js';
+import Workspace from './Workspace.js';
 import { terraQuietaShot71 } from '../../packages/creatorium-core/examples/terra-quieta-shot-71.js';
 import { t2iModels, i2iModels } from '../../packages/studio/src/models.js';
 import * as muapi from '../../packages/studio/src/muapi.js';
@@ -29,11 +29,6 @@ export default function CreatoriumPage() {
   }
 
   return <main>
-    <CreatoriumGenerate {...terraQuietaShot71} models={models} onGenerate={handleGenerate} />
-    {(error || result) && <section className="creatorium-runtime">
-      {error && <p role="alert">{error}</p>}
-      {result?.url && <img src={result.url} alt="Creatorium generation result" />}
-      {result && !result.url && <pre>{JSON.stringify(result, null, 2)}</pre>}
-    </section>}
+    <Workspace {...terraQuietaShot71} models={models} onGenerate={handleGenerate} result={result} error={error} />
   </main>;
 }
