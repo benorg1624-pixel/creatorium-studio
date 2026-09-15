@@ -50,8 +50,7 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
           <div className="creatorium-fields">
             {['scene','subject','action','composition','environment','lighting','camera','visualLanguage','avoid'].map((field) => <label key={field}>{field.replace(/([A-Z])/g, ' $1')}<textarea rows={field === 'scene' ? 3 : 2} value={spec[field] || ''} onChange={(e) => updateSpec(field, e.target.value)} placeholder={`Define ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}…`} /></label>)}
           </div>
-          {error && <p className="creatorium-error" role="alert">{error}</p>}
-          <CreatoriumGenerate project={project} world={world} shot={draftShot} models={models} onGenerate={generate} generating={generating} />
+          <CreatoriumGenerate project={project} world={world} shot={draftShot} models={models} onGenerate={generate} generating={generating} externalError={error} />
         </section>
         <aside className="creatorium-right-inspector">
           <p className="creatorium-kicker">WORLD CONTEXT</p>
