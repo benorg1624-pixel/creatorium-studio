@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { CreatoriumGenerate } from '../../packages/creatorium-core/src/CreatoriumGenerate.js';
 
-export default function Workspace({ project, world, shot, models, onGenerate, result, error }) {
+export default function Workspace({ project, world, shot, models, onGenerate, result, error, generating }) {
   const [activeView, setActiveView] = useState('shot');
   const [draftShot, setDraftShot] = useState(shot);
   const hardLocks = useMemo(() => Object.entries(world.locks?.hard || {}), [world]);
@@ -15,6 +15,12 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
     setDraftShot((current) => ({ ...current, promptSpec: { ...current.promptSpec, [field]: value } }));
   }
 
+  async function generate(args) {
+    const generated = await onGenerate?.(args);
+    if (generated) setActiveView('assets');
+    return generated;
+  }
+
   return <div className="creatorium-workspace">
     <aside className="creatorium-sidebar">
       <p className="creatorium-kicker">CREATORIUM™ STUDIO</p>
@@ -23,7 +29,7 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
         <button className={activeView === 'project' ? 'active' : ''} onClick={() => setActiveView('project')}>Project · {project.name}</button>
         <button className={activeView === 'world' ? 'active' : ''} onClick={() => setActiveView('world')}>World · {world.name}</button>
         <button className={activeView === 'shot' ? 'active' : ''} onClick={() => setActiveView('shot')}>Shot {draftShot.id} · {draftShot.title}</button>
-        <button className={activeView === 'assets' ? 'active' : ''} onClick={() => setActiveView('assets')}>Assets</button>
+        <button className={activeView === 'assets' ? 'active' : ''} onClick={() => setActiveView('assets')}>Assets{generating ? ' · Generating…' : result ? ' · 1' : ''}</button>
       </nav>
     </aside>
 
@@ -44,7 +50,8 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
           <div className="creatorium-fields">
             {['scene','subject','action','composition','environment','lighting','camera','visualLanguage','avoid'].map((field) => <label key={field}>{field.replace(/([A-Z])/g, ' $1')}<textarea rows={field === 'scene' ? 3 : 2} value={spec[field] || ''} onChange={(e) => updateSpec(field, e.target.value)} placeholder={`Define ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}…`} /></label>)}
           </div>
-          <CreatoriumGenerate project={project} world={world} shot={draftShot} models={models} onGenerate={onGenerate} />
+          {error && <p className="creatorium-error" role="alert">{error}</p>}
+          <CreatoriumGenerate project={project} world={world} shot={draftShot} models={models} onGenerate={generate} generating={generating} />
         </section>
         <aside className="creatorium-right-inspector">
           <p className="creatorium-kicker">WORLD CONTEXT</p>
@@ -57,7 +64,16 @@ export default function Workspace({ project, world, shot, models, onGenerate, re
         </aside>
       </div>}
 
-      {activeView === 'assets' && <article className="creatorium-inspector"><p className="creatorium-kicker">ASSETS</p><h1>Generation output</h1>{error && <p role="alert">{error}</p>}{result ? <pre>{JSON.stringify(result, null, 2)}</pre> : <p>No generated asset yet.</p>}</article>}
+      {activeView === 'assets' && <article className="creatorium-inspector creatorium-assets">
+        <p className="creatorium-kicker">ASSETS / SHOT {draftShot.id}</p><h1>Generation output</h1>
+        {generating && <div className="creatorium-generating">Generating asset…</div>}
+        {error && <p className="creatorium-error" role="alert">{error}</p>}
+        {result?.url ? <div className="creatorium-asset-card">
+          <img src={result.url} alt={`Generated asset for ${draftShot.title}`} />
+          <div><strong>{draftShot.title}</strong><p>{result.creatorium?.model}</p><p>{result.creatorium?.task} · {result.creatorium?.engine}</p><small>{result.creatorium?.createdAt}</small></div>
+        </div> : !generating && !result && <p>No generated asset yet.</p>}
+        {result && !result.url && <pre>{JSON.stringify(result, null, 2)}</pre>}
+      </article>}
     </section>
   </div>;
 }
