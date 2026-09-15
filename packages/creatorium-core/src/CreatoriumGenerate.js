@@ -3,14 +3,14 @@ import { compileContext } from './contextCompiler.js';
 import { routeModel } from './modelRouter.js';
 import { toMuapiParams } from './adapters/muapiAdapter.js';
 
-export function CreatoriumGenerate({ project, world, shot, models = [], onGenerate }) {
+export function CreatoriumGenerate({ project, world, shot, models = [], onGenerate, generating = false }) {
   const [model, setModel] = useState(models[0]?.id || '');
   const compiled = useMemo(() => compileContext({ project, world, shot }), [project, world, shot]);
   const route = useMemo(() => routeModel(compiled, { preferredModel: model || null }), [compiled, model]);
   const refs = compiled.references || [];
 
   async function generate() {
-    if (!model) throw new Error('Select a model before generating.');
+    if (!model || generating) return;
     const payload = toMuapiParams(compiled, route);
     return onGenerate?.({ compiled, route, payload });
   }
@@ -30,12 +30,12 @@ export function CreatoriumGenerate({ project, world, shot, models = [], onGenera
           React.createElement('span', { key: ref.id || i }, ref.role || ref.id || `Reference ${i + 1}`)
         )),
         React.createElement('label', { htmlFor: 'creatorium-model' }, 'Model'),
-        React.createElement('select', { id: 'creatorium-model', value: model, onChange: (e) => setModel(e.target.value) },
+        React.createElement('select', { id: 'creatorium-model', value: model, disabled: generating, onChange: (e) => setModel(e.target.value) },
           React.createElement('option', { value: '' }, 'Select model'),
           models.map((item) => React.createElement('option', { key: item.id, value: item.id }, item.name || item.id))
         ),
         React.createElement('p', { className: 'creatorium-route' }, `Route: ${route.engine} / ${route.task}`),
-        React.createElement('button', { type: 'button', onClick: generate, disabled: !model }, 'Generate')
+        React.createElement('button', { type: 'button', onClick: generate, disabled: !model || generating }, generating ? 'Generating…' : 'Generate')
       ),
       React.createElement('div', { className: 'creatorium-panel creatorium-context' },
         React.createElement('label', null, 'Compiled context'),
