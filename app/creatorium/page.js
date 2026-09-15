@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import Workspace from './Workspace.js';
 import { terraQuietaShot71 } from '../../packages/creatorium-core/examples/terra-quieta-shot-71.js';
-import { t2iModels, i2iModels } from '../../packages/studio/src/models.js';
+import { t2iModels } from '../../packages/studio/src/models.js';
 import * as muapi from '../../packages/studio/src/muapi.js';
 import '../../packages/creatorium-core/src/creatorium.css';
 
 export default function CreatoriumPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const models = [...i2iModels, ...t2iModels];
+  const models = t2iModels;
 
   async function handleGenerate({ compiled, route }) {
     setError('');
